@@ -3,6 +3,7 @@
 #import <DaumMap/MTMapView.h>
 #import <DaumMap/MTMapCircle.h>
 #import <DaumMap/MTMapPolyline.h>
+#import <DaumMap/MTMapLocationMarkerItem.h>
 
 // import RCTEventDispatcher
 #if __has_include(<React/RCTEventDispatcher.h>)
@@ -16,6 +17,7 @@
 @implementation DaumMap : UIView {
     RCTEventDispatcher *_eventDispatcher;
     MTMapView *_mapView;
+    MTMapPOIItem* currentLocationMarker;
 }
 
 - (instancetype)initWithEventDispatcher:(RCTEventDispatcher *)eventDispatcher {
@@ -57,6 +59,62 @@
     if ([region valueForKey:@"zoomLevel"] != [NSNull null]) {
         _zoomLevel = [[region valueForKey:@"zoomLevel"] intValue];
     }
+}
+
+- (void) setCurrentLocation:(NSDictionary *)dict {
+
+    NSString *itemName = [dict valueForKey:@"title"];
+    NSString *pinColor = [[dict valueForKey:@"pinColor"] lowercaseString];
+    NSString *selectPinColor = [[dict valueForKey:@"pinColorSelect"] lowercaseString];
+    MTMapPOIItemMarkerType markerType = MTMapPOIItemMarkerTypeBluePin;
+    if ([pinColor isEqualToString:@"red"]) {
+        markerType = MTMapPOIItemMarkerTypeRedPin;
+    } else if ([pinColor isEqualToString:@"yellow"]) {
+        markerType = MTMapPOIItemMarkerTypeYellowPin;
+    } else if ([pinColor isEqualToString:@"blue"]) {
+        markerType = MTMapPOIItemMarkerTypeBluePin;
+    } else if ([pinColor isEqualToString:@"image"]) {
+        markerType = MTMapPOIItemMarkerTypeCustomImage;
+    }
+
+    MTMapPOIItemMarkerSelectedType sMarkerType = MTMapPOIItemMarkerSelectedTypeRedPin;
+    if ([selectPinColor isEqualToString:@"red"]) {
+        sMarkerType = MTMapPOIItemMarkerSelectedTypeRedPin;
+    } else if ([selectPinColor isEqualToString:@"yellow"]) {
+        sMarkerType = MTMapPOIItemMarkerSelectedTypeYellowPin;
+    } else if ([selectPinColor isEqualToString:@"blue"]) {
+        sMarkerType = MTMapPOIItemMarkerSelectedTypeBluePin;
+    } else if ([pinColor isEqualToString:@"image"]) {
+        sMarkerType = MTMapPOIItemMarkerSelectedTypeCustomImage;
+    } else if ([selectPinColor isEqualToString:@"none"]) {
+        sMarkerType = MTMapPOIItemMarkerSelectedTypeNone;
+    }
+
+    MTMapPOIItem* markerItem = [MTMapPOIItem poiItem];
+    if (itemName != NULL) markerItem.itemName = itemName;
+    float latdouble = [[dict valueForKey:@"latitude"] floatValue];
+    float londouble = [[dict valueForKey:@"longitude"] floatValue];
+
+    markerItem.mapPoint = [MTMapPoint mapPointWithGeoCoord:MTMapPointGeoMake(latdouble, londouble)];
+    markerItem.markerType = markerType;
+    if (markerType == MTMapPOIItemMarkerTypeCustomImage) {
+        markerItem.customImageName = [dict valueForKey:@"markerImage"];
+    }
+    markerItem.markerSelectedType = sMarkerType;
+    if (sMarkerType == MTMapPOIItemMarkerSelectedTypeCustomImage) {
+        markerItem.customSelectedImageName = [dict valueForKey:@"markerImageSelect"];
+    }
+    markerItem.showAnimationType = MTMapPOIItemShowAnimationTypeSpringFromGround; // Item이 화면에 추가될때 애니매이션
+    bool draggable = [dict valueForKey:@"draggable"];
+    markerItem.draggable = draggable;
+//        markerItem.tag = i;
+    markerItem.showDisclosureButtonOnCalloutBalloon = NO;
+
+    [_mapView addPOIItem:markerItem];
+    if(currentLocationMarker != nil) {
+        [_mapView removePOIItem:currentLocationMarker];
+    }
+    currentLocationMarker = markerItem;
 }
 
 - (void) setMarkers:(NSArray *)markers {
@@ -132,10 +190,32 @@
 
 - (void) setRegion:(NSDictionary *)region {
     if ([region valueForKey:@"latitude"] != [NSNull null] && [region valueForKey:@"longitude"] != [NSNull null]) {
-        float latdouble = [[region valueForKey:@"latitude"] floatValue];
-        float londouble = [[region valueForKey:@"longitude"] floatValue];
+        //float latdouble = [[region valueForKey:@"latitude"] floatValue];
+        //float londouble = [[region valueForKey:@"longitude"] floatValue];
+        _latdouble = [[region valueForKey:@"latitude"] floatValue];
+        _londouble = [[region valueForKey:@"longitude"] floatValue];
 
-        [_mapView setMapCenterPoint:[MTMapPoint mapPointWithGeoCoord:MTMapPointGeoMake(latdouble, londouble)] animated:YES];
+        //[_mapView setMapCenterPoint:[MTMapPoint mapPointWithGeoCoord:MTMapPointGeoMake(latdouble, londouble)] animated:YES];
+        [_mapView setMapCenterPoint:[MTMapPoint mapPointWithGeoCoord:MTMapPointGeoMake(_latdouble, _londouble)] animated:YES];
+    }
+}
+
+- (void) setTracking: (NSDictionary *)trackingInfo {
+    if ([trackingInfo valueForKey:@"image"] != [NSNull null] ) {
+        NSString* imageName = [trackingInfo valueForKey:@"image"];
+
+        int x = 0;
+        int y = 0;
+        if( [trackingInfo valueForKey:@"offset"] != [NSNull null] ) {
+            NSDictionary* offset = [trackingInfo valueForKey:@"offset"];
+            x = [[offset valueForKey:@"x"] intValue];
+            y = [[offset valueForKey:@"y"] intValue];
+        }
+        MTMapLocationMarkerItem *makerItem = [MTMapLocationMarkerItem mapLocationMarkerItem];
+        makerItem.customTrackingImageName = imageName;
+        makerItem.customTrackingImageAnchorPointOffset = MTMapImageOffsetMake(x, y);
+
+        [_mapView updateCurrentLocationMarker:makerItem];
     }
 }
 

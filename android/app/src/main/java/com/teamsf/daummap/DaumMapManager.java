@@ -32,10 +32,11 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 	public static final String TAG = "DaumMap";
 	private final ReactApplicationContext appContext;
 	private RNMapView rnMapView;
-	private boolean initialRegionSet 	= false;
+	//private boolean initialRegionSet 	= false;
 	private boolean isTracking 			= false;
 	private boolean isCompass 			= false;
 	private int 	tagIDX 				= 0;
+	private MapPOIItem currentLocationMarker = null;
 
 	public DaumMapManager (ReactApplicationContext context) {
 		super();
@@ -71,9 +72,18 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 		double longitude	= initialRegion.hasKey("longitude") ? initialRegion.getDouble("longitude") : 128.392905;
 		int    zoomLevel 	= initialRegion.hasKey("zoomLevel") ? initialRegion.getInt("zoomLevel") : 2;
 
-		if (!initialRegionSet) {
+		//if (!initialRegionSet) {
 			mMapView.setMapCenterPointAndZoomLevel(MapPoint.mapPointWithGeoCoord(latitude, longitude), zoomLevel, true);
-			initialRegionSet = true;
+		//	initialRegionSet = true;
+		//}
+	}
+
+	@ReactProp(name = "region")
+	public void setRegion(MapView mMapView, ReadableMap region) {
+		if(region.hasKey("latitude") && region.hasKey("longitude")) {
+			double latitude = region.getDouble("latitude");
+			double longitude = region.getDouble("longitude");
+			mMapView.setMapCenterPoint(MapPoint.mapPointWithGeoCoord(latitude, longitude), true);
 		}
 	}
 
@@ -89,6 +99,88 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 		} else {
 			mMapView.setMapType(MapView.MapType.Standard);
 		}
+	}
+
+	@ReactProp(name = "currentLocation")
+	public void setCurrentLocation(MapView mMapView, ReadableMap markerInfo) {
+		double latitude 	= markerInfo.hasKey("latitude") ? markerInfo.getDouble("latitude") : 36.143099;
+		double longitude 	= markerInfo.hasKey("longitude") ? markerInfo.getDouble("longitude") : 128.392905;
+
+		MapPOIItem.MarkerType markerType = MapPOIItem.MarkerType.BluePin;
+
+		if (markerInfo.hasKey("pinColor")) {
+			String pinColor = markerInfo.getString("pinColor").toLowerCase();
+			if (pinColor.equals("red")) {
+				markerType = MapPOIItem.MarkerType.RedPin;
+			} else if (pinColor.equals("yellow")) {
+				markerType = MapPOIItem.MarkerType.YellowPin;
+			} else if (pinColor.equals("blue")) {
+				markerType = MapPOIItem.MarkerType.BluePin;
+			} else if (pinColor.equals("image") || pinColor.equals("custom")) {
+				markerType = MapPOIItem.MarkerType.CustomImage;
+			}
+		}
+
+		MapPOIItem.MarkerType sMarkerType = MapPOIItem.MarkerType.RedPin;
+		if (markerInfo.hasKey("pinColorSelect")) {
+			String pinColor = markerInfo.getString("pinColorSelect").toLowerCase();
+			if (pinColor.equals("red")) {
+				sMarkerType = MapPOIItem.MarkerType.RedPin;
+			} else if (pinColor.equals("yellow")) {
+				sMarkerType = MapPOIItem.MarkerType.YellowPin;
+			} else if (pinColor.equals("blue")) {
+				sMarkerType = MapPOIItem.MarkerType.BluePin;
+			} else if (pinColor.equals("image") || pinColor.equals("custom")) {
+				sMarkerType = MapPOIItem.MarkerType.CustomImage;
+			} else if (pinColor.equals("none")) {
+				sMarkerType = null;
+			}
+		}
+
+		MapPOIItem marker = new MapPOIItem();
+		if (markerInfo.hasKey("title")) {
+			marker.setItemName(markerInfo.getString("title"));
+		}
+
+//			marker.setTag(i);
+
+		// 마커 좌표
+		marker.setMapPoint(MapPoint.mapPointWithGeoCoord(latitude, longitude));
+
+		// 기본 마커 모양
+		marker.setMarkerType(markerType);
+		if (markerType == MapPOIItem.MarkerType.CustomImage) {
+			if (markerInfo.hasKey("markerImage")) {
+				String markerImage = markerInfo.getString("markerImage");
+				int resID = appContext.getResources().getIdentifier(markerImage, "drawable", appContext.getApplicationContext().getPackageName());
+				marker.setCustomImageResourceId(resID);
+			}
+		}
+
+		// 마커를 선택한 경우
+		marker.setSelectedMarkerType(sMarkerType);
+		if (sMarkerType == MapPOIItem.MarkerType.CustomImage) {
+			if (markerInfo.hasKey("markerImageSelect")) {
+				String markerImage = markerInfo.getString("markerImageSelect");
+				int resID = appContext.getResources().getIdentifier(markerImage, "drawable", appContext.getApplicationContext().getPackageName());
+				marker.setCustomSelectedImageResourceId(resID);
+			}
+		}
+		marker.setShowAnimationType(MapPOIItem.ShowAnimationType.NoAnimation); // 마커 추가시 효과
+		marker.setShowDisclosureButtonOnCalloutBalloon(false);						// 마커 클릭시, 말풍선 오른쪽에 나타나는 > 표시 여부
+
+		// 마커 드래그 가능 여부
+		boolean draggable = false;
+		if (markerInfo.hasKey("draggable")) {
+			draggable = markerInfo.getBoolean("draggable");
+		}
+		marker.setDraggable(draggable);
+
+		if(currentLocationMarker != null) {
+			mMapView.removePOIItem(currentLocationMarker);
+		}
+		mMapView.addPOIItem(marker);
+		currentLocationMarker = marker;
 	}
 
 	@ReactProp(name = "markers")
@@ -145,7 +237,7 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 				if (markerInfo.hasKey("markerImage")) {
 					String markerImage = markerInfo.getString("markerImage");
 					int resID = appContext.getResources().getIdentifier(markerImage, "drawable", appContext.getApplicationContext().getPackageName());
-					marker.setCustomImageResourceId(resID);
+					marker.setCustomSelectedImageResourceId(resID);
 				}
 			}
 
@@ -169,6 +261,23 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 			marker.setDraggable(draggable);
 
 			mMapView.addPOIItem(marker);
+		}
+	}
+
+	@ReactProp(name = "tracking")
+	public void setTracking(MapView mMapView, ReadableMap trackingInfo) {
+		if (trackingInfo.hasKey("image")) {
+			String image = trackingInfo.getString("image");
+			int x = 0;
+			int y = 0;
+			if(trackingInfo.hasKey("offset")) {
+				ReadableMap offset = trackingInfo.getMap("offset");
+				x = offset.getInt("x");
+				y = offset.getInt("y");
+			}
+
+			int resID = appContext.getResources().getIdentifier(image, "drawable", appContext.getApplicationContext().getPackageName());
+			mMapView.setCustomCurrentLocationMarkerTrackingImage(resID, new MapPOIItem.ImageOffset(x,y));
 		}
 	}
 
