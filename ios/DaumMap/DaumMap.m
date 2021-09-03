@@ -118,6 +118,7 @@
 }
 
 - (void) setMarkers:(NSArray *)markers {
+    [_mapView removeAllPOIItems];
     NSArray *markerList = [NSArray arrayWithObjects: NULL];
 
     for (int i = 0; i < [markers count]; i++) {
