@@ -15,7 +15,8 @@ const DaumMap 		= requireNativeComponent('DaumMap', DaumMapView, {
 	nativeOnly: {
 		onMarkerSelect	: true,
 		onMarkerPress	: true,
-		onRegionChange	: true
+		onRegionChange	: true,
+		onMapLongPress	: true
 	}
 })
 
@@ -64,7 +65,8 @@ export default class DaumMapView extends Component {
 					onMarkerMoved={this._onMarkerMoved}
 					onRegionChange={this._onRegionChange}
 					onUpdateCurrentLocation={this._onUpdateCurrentLocation}
-					onUpdateCurrentHeading={this._onUpdateCurrentHeading} />
+					onUpdateCurrentHeading={this._onUpdateCurrentHeading}
+					onMapLongPress={this._onMapLongPress} />
 			);
 		} else {
 			return (
@@ -108,6 +110,12 @@ export default class DaumMapView extends Component {
 	_onUpdateCurrentHeading = (event) => {
 		if (this.props.onUpdateCurrentHeading != undefined) {
 			this.props.onUpdateCurrentHeading(event.nativeEvent);
+		}
+	}
+
+	_onMapLongPress = (event) => {
+		if (this.props.onMapLongPress != undefined) {
+			this.props.onMapLongPress(event.nativeEvent);
 		}
 	}
 
@@ -411,6 +419,7 @@ DaumMapView.propTypes = {
 	onRegionChange 			: PropTypes.func,
 	onUpdateCurrentLocation	: PropTypes.func,
 	onUpdateCurrentHeading 	: PropTypes.func,
+	onMapLongPress	 	: PropTypes.func,
 }
 
 DaumMapView.defaultProps = {

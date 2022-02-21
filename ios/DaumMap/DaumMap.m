@@ -49,15 +49,15 @@
     [self addSubview:_mapView];
 }
 
-- (void) setInitialRegion:(NSDictionary *)region {
-    if ([region valueForKey:@"latitude"] != [NSNull null]) {
-        _latdouble = [[region valueForKey:@"latitude"] floatValue];
+- (void) setInitialRegion:(NSDictionary *)initialRegion {
+    if ([initialRegion valueForKey:@"latitude"] != [NSNull null]) {
+        _latdouble = [[initialRegion valueForKey:@"latitude"] floatValue];
     }
-    if ([region valueForKey:@"longitude"] != [NSNull null]) {
-        _londouble = [[region valueForKey:@"longitude"] floatValue];
+    if ([initialRegion valueForKey:@"longitude"] != [NSNull null]) {
+        _londouble = [[initialRegion valueForKey:@"longitude"] floatValue];
     }
-    if ([region valueForKey:@"zoomLevel"] != [NSNull null]) {
-        _zoomLevel = [[region valueForKey:@"zoomLevel"] intValue];
+    if ([initialRegion valueForKey:@"zoomLevel"] != [NSNull null]) {
+        _zoomLevel = [[initialRegion valueForKey:@"zoomLevel"] intValue];
     }
 }
 
@@ -109,6 +109,16 @@
     markerItem.draggable = draggable;
 //        markerItem.tag = i;
     markerItem.showDisclosureButtonOnCalloutBalloon = NO;
+
+    // offset
+    int x = 0;
+    int y = 0;
+    if( [dict valueForKey:@"offset"] != [NSNull null] ) {
+        NSDictionary* offset = [dict valueForKey:@"offset"];
+        x = [[offset valueForKey:@"x"] intValue];
+        y = [[offset valueForKey:@"y"] intValue];
+    }
+    markerItem.customImageAnchorPointOffset = MTMapImageOffsetMake(x, y);
 
     [_mapView addPOIItem:markerItem];
     if(currentLocationMarker != nil) {
@@ -169,6 +179,16 @@
         markerItem.draggable = draggable;
         markerItem.tag = i;
         markerItem.showDisclosureButtonOnCalloutBalloon = NO;
+        
+        // offset
+        int x = 0;
+        int y = 0;
+        if( [dict valueForKey:@"offset"] != [NSNull null] ) {
+            NSDictionary* offset = [dict valueForKey:@"offset"];
+            x = [[offset valueForKey:@"x"] intValue];
+            y = [[offset valueForKey:@"y"] intValue];
+        }
+        markerItem.customImageAnchorPointOffset = MTMapImageOffsetMake(x, y);
 
         markerList = [markerList arrayByAddingObject: markerItem];
     }
@@ -195,9 +215,13 @@
         //float londouble = [[region valueForKey:@"longitude"] floatValue];
         _latdouble = [[region valueForKey:@"latitude"] floatValue];
         _londouble = [[region valueForKey:@"longitude"] floatValue];
+        Boolean animated = YES;
+        if(region[@"animated"] != nil) {
+            animated = [[region valueForKey:@"animated"] boolValue];
+        }
 
         //[_mapView setMapCenterPoint:[MTMapPoint mapPointWithGeoCoord:MTMapPointGeoMake(latdouble, londouble)] animated:YES];
-        [_mapView setMapCenterPoint:[MTMapPoint mapPointWithGeoCoord:MTMapPointGeoMake(_latdouble, _londouble)] animated:YES];
+        [_mapView setMapCenterPoint:[MTMapPoint mapPointWithGeoCoord:MTMapPointGeoMake(_latdouble, _londouble)] animated:animated];
     }
 }
 
@@ -319,6 +343,10 @@
         return [UIColor greenColor];
     } else if ([colorStr isEqualToString:@"white"]) {
         return [UIColor whiteColor];
+    } else if ([colorStr isEqualToString:@"greenopacity"]) {
+        return [UIColor colorWithRed:0/255 green:255.0/255 blue:12.0/255 alpha:0.5];
+    } else if ([colorStr isEqualToString:@"orangeopacity"]) {
+        return [UIColor colorWithRed:240.0/255 green:127.0/255 blue:60.0/255 alpha:0.5];
     } else {
         return [UIColor whiteColor];
     }
@@ -427,5 +455,17 @@
                          }
                  };
     if (self.onRegionChange) self.onRegionChange(event);
+}
+
+// 사용자가 지도 위 한 지점을 길게 누른 경우(long press) 호출된다.
+- (void)mapView:(MTMapView*)mapView longPressOnMapPoint:(MTMapPoint*)mapPoint {
+    id event = @{
+                 @"action": @"mapLongPress",
+                 @"coordinate": @{
+                         @"latitude": @(mapPoint.mapPointGeo.latitude),
+                         @"longitude": @(mapPoint.mapPointGeo.longitude)
+                         }
+                 };
+    if (self.onMapLongPress) self.onMapLongPress(event);
 }
 @end

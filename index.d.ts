@@ -133,6 +133,11 @@ export interface MapViewProps {
      * 나침반 모드 사용시 방향 각도 값이 변경된 경우
      */
     onUpdateCurrentHeading: (degree: any) => void;
+
+    /**
+     * 길게 클릭 한 경우
+     */
+    onMapLongPress: any;
 }
 
 export default class DaumMapView extends React.Component<any> {}

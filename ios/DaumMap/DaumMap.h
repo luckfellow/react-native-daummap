@@ -27,6 +27,7 @@
     @property (nonatomic, copy) RCTDirectEventBlock onRegionChange;
     @property (nonatomic, copy) RCTDirectEventBlock onUpdateCurrentLocation;
     @property (nonatomic, copy) RCTDirectEventBlock onUpdateCurrentHeading;
+    @property (nonatomic, copy) RCTDirectEventBlock onMapLongPress;
 
 
     @property (nonatomic, assign) float latdouble;

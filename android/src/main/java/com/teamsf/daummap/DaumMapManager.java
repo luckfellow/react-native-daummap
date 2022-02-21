@@ -71,9 +71,10 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 		double latitude 	= initialRegion.hasKey("latitude") ? initialRegion.getDouble("latitude") : 36.143099;
 		double longitude	= initialRegion.hasKey("longitude") ? initialRegion.getDouble("longitude") : 128.392905;
 		int    zoomLevel 	= initialRegion.hasKey("zoomLevel") ? initialRegion.getInt("zoomLevel") : 2;
+		boolean animated	= initialRegion.hasKey("animated") ? initialRegion.getBoolean("animated") : true;
 
 		//if (!initialRegionSet) {
-			mMapView.setMapCenterPointAndZoomLevel(MapPoint.mapPointWithGeoCoord(latitude, longitude), zoomLevel, true);
+			mMapView.setMapCenterPointAndZoomLevel(MapPoint.mapPointWithGeoCoord(latitude, longitude), zoomLevel, animated);
 		//	initialRegionSet = true;
 		//}
 	}
@@ -83,7 +84,8 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 		if(region.hasKey("latitude") && region.hasKey("longitude")) {
 			double latitude = region.getDouble("latitude");
 			double longitude = region.getDouble("longitude");
-			mMapView.setMapCenterPoint(MapPoint.mapPointWithGeoCoord(latitude, longitude), true);
+			boolean animated = region.hasKey("animated") ? region.getBoolean("animated") : true;
+			mMapView.setMapCenterPoint(MapPoint.mapPointWithGeoCoord(latitude, longitude), animated);
 		}
 	}
 
@@ -169,6 +171,16 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 		marker.setShowAnimationType(MapPOIItem.ShowAnimationType.NoAnimation); // 마커 추가시 효과
 		marker.setShowDisclosureButtonOnCalloutBalloon(false);						// 마커 클릭시, 말풍선 오른쪽에 나타나는 > 표시 여부
 
+		// offset
+		int x = 0;
+		int y = 0;
+		if(markerInfo.hasKey("offset")) {
+			ReadableMap offset = markerInfo.getMap("offset");
+			x = offset.getInt("x");
+			y = offset.getInt("y");
+		}
+		marker.setCustomImageAnchorPointOffset(new MapPOIItem.ImageOffset(x,y));
+
 		// 마커 드래그 가능 여부
 		boolean draggable = false;
 		if (markerInfo.hasKey("draggable")) {
@@ -185,6 +197,7 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 
 	@ReactProp(name = "markers")
 	public void setMarkers(MapView mMapView, ReadableArray markers) {
+		mMapView.removeAllPOIItems();
 		for (int i = 0; i < markers.size(); i++) {
 			ReadableMap markerInfo = markers.getMap(i);
 			double latitude 	= markerInfo.hasKey("latitude") ? markerInfo.getDouble("latitude") : 36.143099;
@@ -237,7 +250,7 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 				if (markerInfo.hasKey("markerImage")) {
 					String markerImage = markerInfo.getString("markerImage");
 					int resID = appContext.getResources().getIdentifier(markerImage, "drawable", appContext.getApplicationContext().getPackageName());
-					marker.setCustomSelectedImageResourceId(resID);
+					marker.setCustomImageResourceId(resID);
 				}
 			}
 
@@ -247,11 +260,21 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 				if (markerInfo.hasKey("markerImageSelect")) {
 					String markerImage = markerInfo.getString("markerImageSelect");
 					int resID = appContext.getResources().getIdentifier(markerImage, "drawable", appContext.getApplicationContext().getPackageName());
-					marker.setCustomImageResourceId(resID);
+					marker.setCustomSelectedImageResourceId(resID);
 				}
 			}
 			marker.setShowAnimationType(MapPOIItem.ShowAnimationType.SpringFromGround); // 마커 추가시 효과
 			marker.setShowDisclosureButtonOnCalloutBalloon(false);						// 마커 클릭시, 말풍선 오른쪽에 나타나는 > 표시 여부
+
+			// offset
+			int x = 0;
+			int y = 0;
+			if(markerInfo.hasKey("offset")) {
+				ReadableMap offset = markerInfo.getMap("offset");
+				x = offset.getInt("x");
+				y = offset.getInt("y");
+			}
+			marker.setCustomImageAnchorPointOffset(new MapPOIItem.ImageOffset(x,y));
 
 			// 마커 드래그 가능 여부
 			boolean draggable = false;
@@ -374,6 +397,10 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 			return Color.GREEN;
 		} else if (colorString.equals("white")) {
 			return Color.WHITE;
+		} else if (colorString.equals("greenopacity")) {
+			return Color.argb(0.5f, 0f, 255.0f/255.0f, 12.0f/255.0f);
+		} else if (colorString.equals("orangeopacity")) {
+			return Color.argb(0.5f, 240.0f/255.0f, 127.0f/255.0f, 60.0f/255.0f);
 		} else {
 			return Color.TRANSPARENT;
 		}
@@ -382,15 +409,16 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 	@Override
 	@Nullable
 	public Map getExportedCustomDirectEventTypeConstants() {
-	Map<String, Map<String, String>> map = MapBuilder.of(
-		"onMarkerSelect", MapBuilder.of("registrationName", "onMarkerSelect"),
-		"onMarkerPress", MapBuilder.of("registrationName", "onMarkerPress"),
-		"onMarkerPressEvent", MapBuilder.of("registrationName", "onMarkerPressEvent"),
-		"onMarkerMoved", MapBuilder.of("registrationName", "onMarkerMoved"),
-		"onRegionChange", MapBuilder.of("registrationName", "onRegionChange"),
-		"onUpdateCurrentLocation", MapBuilder.of("registrationName", "onUpdateCurrentLocation"),
-		"onUpdateCurrentHeading", MapBuilder.of("registrationName", "onUpdateCurrentHeading")
-	);
+		Map<String, Map<String, String>> map = MapBuilder.of(
+			"onMarkerSelect", MapBuilder.of("registrationName", "onMarkerSelect"),
+			"onMarkerPress", MapBuilder.of("registrationName", "onMarkerPress"),
+			"onMarkerPressEvent", MapBuilder.of("registrationName", "onMarkerPressEvent"),
+			"onMarkerMoved", MapBuilder.of("registrationName", "onMarkerMoved"),
+			"onRegionChange", MapBuilder.of("registrationName", "onRegionChange"),
+			"onUpdateCurrentLocation", MapBuilder.of("registrationName", "onUpdateCurrentLocation"),
+			"onUpdateCurrentHeading", MapBuilder.of("registrationName", "onUpdateCurrentHeading")
+		);
+		map.put("onMapLongPress", MapBuilder.of("registrationName", "onMapLongPress"));
 
 	return map;
 	}
@@ -439,7 +467,15 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 	// 지도 위 한 지점을 길게 누른 경우
 	@Override
 	public void onMapViewLongPressed(MapView mapView, MapPoint mapPoint) {
+		WritableMap event = new WritableNativeMap();
 
+		WritableMap coordinate = new WritableNativeMap();
+		coordinate.putDouble("latitude", mapPoint.getMapPointGeoCoord().latitude);
+		coordinate.putDouble("longitude", mapPoint.getMapPointGeoCoord().longitude);
+		event.putMap("coordinate", coordinate);
+		event.putString("action", "mapLongPress");
+
+		appContext.getJSModule(RCTEventEmitter.class).receiveEvent(rnMapView.getId(), "onMapLongPress", event);
 	}
 
 	// 지도 드래그를 시작한 경우
