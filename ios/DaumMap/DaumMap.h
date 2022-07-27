@@ -25,6 +25,7 @@
     @property (nonatomic, copy) RCTDirectEventBlock onMarkerPress;
     @property (nonatomic, copy) RCTDirectEventBlock onMarkerMoved;
     @property (nonatomic, copy) RCTDirectEventBlock onRegionChange;
+    @property (nonatomic, copy) RCTDirectEventBlock onZoomLevelChange;
     @property (nonatomic, copy) RCTDirectEventBlock onUpdateCurrentLocation;
     @property (nonatomic, copy) RCTDirectEventBlock onUpdateCurrentHeading;
     @property (nonatomic, copy) RCTDirectEventBlock onMapLongPress;

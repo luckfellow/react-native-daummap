@@ -457,6 +457,15 @@
     if (self.onRegionChange) self.onRegionChange(event);
 }
 
+// 지도 확대/축소 레벨이 변경된 경우 호출된다.
+- (void)mapView:(MTMapView*)mapView zoomLevelChangedTo:(MTMapZoomLevel)zoomLevel {
+    id event = @{
+                 @"action": @"zoomLevelChange",
+                 @"zoomLevel": @(zoomLevel),
+                 };
+    if (self.onZoomLevelChange) self.onZoomLevelChange(event);
+}
+
 // 사용자가 지도 위 한 지점을 길게 누른 경우(long press) 호출된다.
 - (void)mapView:(MTMapView*)mapView longPressOnMapPoint:(MTMapPoint*)mapPoint {
     id event = @{

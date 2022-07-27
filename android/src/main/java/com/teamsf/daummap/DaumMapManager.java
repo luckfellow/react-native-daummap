@@ -170,6 +170,7 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 		}
 		marker.setShowAnimationType(MapPOIItem.ShowAnimationType.NoAnimation); // 마커 추가시 효과
 		marker.setShowDisclosureButtonOnCalloutBalloon(false);						// 마커 클릭시, 말풍선 오른쪽에 나타나는 > 표시 여부
+		marker.setShowCalloutBalloonOnTouch(false);									// 마커 클릭시, 말풍선(Callout Balloon)을 보여줄지 여부를 설정한다.
 
 		// offset
 		int x = 0;
@@ -265,6 +266,7 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 			}
 			marker.setShowAnimationType(MapPOIItem.ShowAnimationType.SpringFromGround); // 마커 추가시 효과
 			marker.setShowDisclosureButtonOnCalloutBalloon(false);						// 마커 클릭시, 말풍선 오른쪽에 나타나는 > 표시 여부
+			marker.setShowCalloutBalloonOnTouch(false);									// 마커 클릭시, 말풍선(Callout Balloon)을 보여줄지 여부를 설정한다.
 
 			// offset
 			int x = 0;
@@ -419,6 +421,7 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 			"onUpdateCurrentHeading", MapBuilder.of("registrationName", "onUpdateCurrentHeading")
 		);
 		map.put("onMapLongPress", MapBuilder.of("registrationName", "onMapLongPress"));
+		map.put("onZoomLevelChange", MapBuilder.of("registrationName", "onZoomLevelChange"));
 
 	return map;
 	}
@@ -449,7 +452,13 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 	// 지도 확대/축소 레벨이 변경된 경우
 	@Override
 	public void onMapViewZoomLevelChanged(MapView mapView, int zoomLevel) {
+		WritableMap event = new WritableNativeMap();
 
+		WritableMap coordinate = new WritableNativeMap();
+		event.putDouble("zoomLevel", zoomLevel);
+		event.putString("action", "zoomLevelChange");
+
+		appContext.getJSModule(RCTEventEmitter.class).receiveEvent(rnMapView.getId(), "onZoomLevelChange", event);
 	}
 
 	// 지도 위를 터치한 경우
