@@ -333,7 +333,8 @@ public class DaumMapManager extends SimpleViewManager<View> implements MapView.M
 		}
 
 		if (mMapView != null) {
-			mMapView.setCurrentLocationTrackingMode(trackingModeValue);
+			// 221212 SDK 31 이상에서 빌드시 setCurrentLocationTrackingMode에서 에러발생하여 주석처리함.
+			//mMapView.setCurrentLocationTrackingMode(trackingModeValue);
 		}
 	}
 
